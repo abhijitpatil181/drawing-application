@@ -13,7 +13,7 @@ import {
 import useDrawingContext from "../../hooks/useDrawing";
 import EraserCursor from "./DrawingCanvas.styled";
 import Polygon from "./components/shapes/Polygon";
-import { isIntersecting } from "../../utils/helper";
+import { isIntersecting, isTextToolProperty } from "../../utils/helper";
 
 const DrawingCanvas: React.FC = () => {
   const { activeTool, drawingData, setDrawingData } = useDrawingContext();
@@ -54,7 +54,10 @@ const DrawingCanvas: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (currentTool && currentTool.type === "text") {
-        let newText = currentTool.Properties.text || "";
+        let newText =
+          (isTextToolProperty(currentTool.Properties) &&
+            currentTool.Properties.text) ||
+          "";
         let cursorPosition = newText.length; // Default position to the end of the text
 
         switch (e.key) {
@@ -297,46 +300,49 @@ const DrawingCanvas: React.FC = () => {
       case "brush":
         return <FreehandShape tool={tool} />;
       case "text": {
-        const { x, y } = tool.geometry[0];
-        const fontSize = parseInt(tool.Properties.fontSize || "20", 10);
-        const fontFamily = tool.Properties.fontFamily || "Arial";
-        const text = tool.Properties.text || "";
-        const lines = text.split("\n");
-        const cursorPosition = tool.Properties.cursorPosition || 0;
+        // Type guard to ensure Properties is TextToolProperty
+        if (isTextToolProperty(tool.Properties)) {
+          const { x, y } = tool.geometry[0];
+          const fontSize = parseInt(tool.Properties.fontSize || "20", 10);
+          const fontFamily = tool.Properties.fontFamily || "Arial";
+          const text = tool.Properties.text || "";
+          const lines = text.split("\n");
+          const cursorPosition = tool.Properties.cursorPosition || 0;
 
-        let cursorX = x;
-        let cursorY = y;
+          let cursorX = x;
+          let cursorY = y;
 
-        let charIndex = 0;
+          let charIndex = 0;
 
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
 
-          if (cursorPosition <= charIndex + line.length) {
-            // Move cursor to the appropriate x and y position
-            cursorX =
-              x +
-              measureTextWidth(
-                line.slice(0, cursorPosition - charIndex),
-                fontSize,
-                fontFamily
-              );
-            cursorY = y + i * fontSize;
-            break;
+            if (cursorPosition <= charIndex + line.length) {
+              // Move cursor to the appropriate x and y position
+              cursorX =
+                x +
+                measureTextWidth(
+                  line.slice(0, cursorPosition - charIndex),
+                  fontSize,
+                  fontFamily
+                );
+              cursorY = y + i * fontSize;
+              break;
+            }
+            charIndex += line.length + 1; // +1 for newline character
           }
-          charIndex += line.length + 1; // +1 for newline character
+
+          return (
+            <>
+              <TextShape tool={tool} />
+              {currentTool?.type === "text" && activeTool === "text" && (
+                <BlinkingCursor x={cursorX} y={cursorY} />
+              )}
+            </>
+          );
         }
-
-        return (
-          <>
-            <TextShape tool={tool} />
-            {currentTool?.type === "text" && activeTool === "text" && (
-              <BlinkingCursor x={cursorX} y={cursorY} />
-            )}
-          </>
-        );
+        return null;
       }
-
       default:
         return null;
     }

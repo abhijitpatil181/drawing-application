@@ -1,4 +1,8 @@
-import { ToolBaseInformation } from "../types/canvas.type";
+import {
+  ShapeToolProperties,
+  TextToolProperty,
+  ToolBaseInformation,
+} from "../types/canvas.type";
 
 export const isIntersecting = (
   shape: ToolBaseInformation,
@@ -17,4 +21,10 @@ export const isIntersecting = (
     shapeBounds.maxY > eraserRect.y &&
     shapeBounds.minY < eraserRect.y + eraserRect.height
   );
+};
+
+export const isTextToolProperty = (
+  properties: ShapeToolProperties | TextToolProperty
+): properties is TextToolProperty => {
+  return (properties as TextToolProperty).text !== undefined;
 };
