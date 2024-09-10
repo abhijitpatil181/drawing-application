@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Stage, Layer } from "react-konva";
+import { Stage, Layer, Rect } from "react-konva";
 import { ToolBaseInformation } from "../../types/canvas.type";
 import {
   LineShape,
@@ -12,6 +12,8 @@ import {
 
 import useDrawingContext from "../../hooks/useDrawing";
 import EraserCursor from "./DrawingCanvas.styled";
+import Polygon from "./components/shapes/Polygon";
+import { isIntersecting } from "../../utils/helper";
 
 const DrawingCanvas: React.FC = () => {
   const { activeTool, drawingData, setDrawingData } = useDrawingContext();
@@ -99,37 +101,66 @@ const DrawingCanvas: React.FC = () => {
     if (currentTool && currentTool.type === "text") {
       document.addEventListener("keydown", handleKeyDown);
       return () => {
+        console.log("component unmounted");
         document.removeEventListener("keydown", handleKeyDown);
       };
     }
-  }, [currentTool, drawingData]);
+  }, [currentTool]);
+
+  useEffect(() => {
+    if (
+      currentTool &&
+      currentTool?.type === "polygon" &&
+      activeTool !== "polygon"
+    ) {
+      setCurrentTool(null);
+      setDrawingData([...drawingData, currentTool]);
+    }
+    if (!activeTool) {
+      setEraserRect(null);
+      setCursorPosition(null);
+    }
+  }, [activeTool]);
 
   const handleMouseDown = (e: any) => {
     const { x, y } = e.target.getStage().getPointerPosition();
 
     if (activeTool === "eraser") {
-      setEraserRect({ x, y, width: 50, height: 50 }); // Set the initial size and position of the eraser
+      setEraserRect({ x, y, width: 50, height: 50 });
       setDrawing(true);
     } else {
-      let newTool: ToolBaseInformation;
-
       switch (activeTool) {
-        case "brush":
-          newTool = {
+        case "brush": {
+          const newTool: ToolBaseInformation = {
             type: "brush",
             geometry: [{ x, y }],
             Properties: { color: "black", lineWidth: "2" },
           };
+          setCurrentTool(newTool);
           break;
-        case "polygon":
-          newTool = {
-            type: "polygon",
-            geometry: [{ x, y }],
-            Properties: { color: "black", lineWidth: "2" },
-          };
+        }
+
+        case "polygon": {
+          console.log("currentTool", currentTool);
+          console.log("currentTool?.type", currentTool?.type);
+          if (currentTool && currentTool?.type === "polygon") {
+            setCurrentTool({
+              ...currentTool,
+              geometry: [...currentTool.geometry, { x, y }],
+            });
+          } else {
+            const newTool: ToolBaseInformation = {
+              type: "polygon",
+              geometry: [{ x, y }],
+              Properties: { color: "black", lineWidth: "2" },
+            };
+            setCurrentTool(newTool);
+          }
           break;
-        case "circle":
-          newTool = {
+        }
+
+        case "circle": {
+          const newTool: ToolBaseInformation = {
             type: "circle",
             geometry: [
               { x, y },
@@ -137,9 +168,12 @@ const DrawingCanvas: React.FC = () => {
             ],
             Properties: { color: "black", lineWidth: "2" },
           };
+          setCurrentTool(newTool);
           break;
-        case "rectangle":
-          newTool = {
+        }
+
+        case "rectangle": {
+          const newTool: ToolBaseInformation = {
             type: "rectangle",
             geometry: [
               { x, y },
@@ -147,30 +181,46 @@ const DrawingCanvas: React.FC = () => {
             ],
             Properties: { color: "black", lineWidth: "2" },
           };
+          setCurrentTool(newTool);
           break;
-        case "text":
-          newTool = {
-            type: "text",
-            geometry: [{ x, y }],
-            Properties: {
-              color: "black",
-              fontSize: "20",
-              fontFamily: "Arial",
-              text: "",
-              cursorPosition: 0,
-            },
-          };
+        }
+
+        case "text": {
+          if (currentTool && currentTool?.type === "text") {
+            // Add the new point to the existing polygon's geometry
+            setDrawingData([...drawingData, currentTool]);
+            setCurrentTool(null);
+            setDrawing(false);
+          } else {
+            // Create a new polygon tool with the first point
+            const newTool: ToolBaseInformation = {
+              type: "text",
+              geometry: [{ x, y }],
+              Properties: {
+                color: "black",
+                fontSize: "20",
+                fontFamily: "Arial",
+                text: "",
+                cursorPosition: 0,
+              },
+            };
+            setCurrentTool(newTool);
+          }
+
           break;
-        default:
-          newTool = {
+        }
+
+        default: {
+          const newTool: ToolBaseInformation = {
             type: activeTool,
             geometry: [{ x, y }],
             Properties: { color: "black", lineWidth: "2" },
           };
+          setCurrentTool(newTool);
           break;
+        }
       }
 
-      setCurrentTool(newTool);
       setDrawing(true);
     }
   };
@@ -182,17 +232,12 @@ const DrawingCanvas: React.FC = () => {
     setCursorPosition({ x, y }); // Update cursor position
 
     if (activeTool === "eraser" && eraserRect) {
-      setEraserRect({
-        ...eraserRect,
-        width: x - eraserRect.x,
-        height: y - eraserRect.y,
-      });
+      setEraserRect({ x, y, width: 25, height: 25 });
     } else if (currentTool) {
       let updatedTool: ToolBaseInformation;
 
       switch (activeTool) {
         case "brush":
-        case "polygon":
           updatedTool = {
             ...currentTool,
             geometry: [...currentTool.geometry, { x, y }],
@@ -220,21 +265,16 @@ const DrawingCanvas: React.FC = () => {
   };
 
   const handleMouseUp = () => {
+    if (activeTool === "polygon") {
+      return;
+    }
+
     if (activeTool === "eraser" && eraserRect) {
       // Erase shapes within the eraser rectangle
-      const newDrawingData = drawingData.filter((tool) => {
-        const { x, y, width, height } = eraserRect!;
-        return !tool.geometry.some(
-          (point) =>
-            point.x >= x &&
-            point.x <= x + width &&
-            point.y >= y &&
-            point.y <= y + height
-        );
-      });
-
-      setDrawingData(newDrawingData);
-      setEraserRect(null);
+      setDrawingData((prevData) =>
+        prevData.filter((shape) => !isIntersecting(shape, eraserRect))
+      );
+      // setEraserRect(null);
     } else if (currentTool && currentTool.type !== "text") {
       setDrawingData([...drawingData, currentTool]);
       setCurrentTool(null);
@@ -252,8 +292,8 @@ const DrawingCanvas: React.FC = () => {
       case "rectangle":
         return <RectangleShape tool={tool} />;
       case "polygon":
-        return <></>;
-      // return <PolygonShape tool={tool} />;
+        return <Polygon tool={tool} />;
+
       case "brush":
         return <FreehandShape tool={tool} />;
       case "text": {
@@ -290,7 +330,9 @@ const DrawingCanvas: React.FC = () => {
         return (
           <>
             <TextShape tool={tool} />
-            <BlinkingCursor x={cursorX} y={cursorY} />
+            {currentTool?.type === "text" && activeTool === "text" && (
+              <BlinkingCursor x={cursorX} y={cursorY} />
+            )}
           </>
         );
       }
@@ -314,9 +356,16 @@ const DrawingCanvas: React.FC = () => {
             <React.Fragment key={index}>{renderShape(tool)}</React.Fragment>
           ))}
           {currentTool && renderShape(currentTool)}
-          {eraserRect && <EraserCursor x={eraserRect.x} y={eraserRect.y} />}
-          {cursorPosition && (
-            <EraserCursor x={cursorPosition.x} y={cursorPosition.y} />
+          {eraserRect && (
+            <Rect
+              x={cursorPosition?.x}
+              y={cursorPosition?.y}
+              width={eraserRect.width}
+              height={eraserRect.height}
+              fill="rgba(0, 0, 0, 0.3)" // Semi-transparent fill to visualize eraser
+              stroke="black"
+              strokeWidth={1}
+            />
           )}
         </Layer>
       </Stage>

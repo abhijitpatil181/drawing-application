@@ -23,7 +23,7 @@ export const ToolBarButton = styled(Button, {
 
 export const ToolBarWrapper = styled(Paper)(({ theme }) => ({
   position: "absolute",
-  left: "45%",
+  left: "38%",
   top: "1.5rem",
   boxShadow: theme.shadows[5],
   zIndex: 1000,

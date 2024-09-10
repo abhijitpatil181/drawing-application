@@ -11,7 +11,7 @@ const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<string>("");
   const [drawingData, setDrawingData] = useState<ToolBaseInformation[]>([]);
   const [history, setHistory] = useState<ToolBaseInformation[]>([]);
-  console.log("eraser", eraser);
+  console.log("drawingData", drawingData);
 
   useEffect(() => {
     if (socket)

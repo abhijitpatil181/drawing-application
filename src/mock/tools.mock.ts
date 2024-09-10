@@ -22,7 +22,7 @@ export const toolBarOption: ToolBarOptions[] = [
     propertyIcon: CircleOutlinedIcon,
   },
   {
-    propertyName: "polyline",
+    propertyName: "polygon",
     propertyIcon: PolylineOutlinedIcon,
   },
   {
