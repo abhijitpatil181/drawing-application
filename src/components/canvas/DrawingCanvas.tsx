@@ -53,11 +53,12 @@ const DrawingCanvas: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (currentTool && currentTool.type === "text") {
-        let newText =
-          (isTextToolProperty(currentTool.Properties) &&
-            currentTool.Properties.text) ||
-          "";
+      if (
+        currentTool &&
+        currentTool.type === "text" &&
+        isTextToolProperty(currentTool.Properties)
+      ) {
+        let newText = currentTool.Properties.text || "";
         let cursorPosition = newText.length; // Default position to the end of the text
 
         switch (e.key) {
