@@ -4,7 +4,6 @@ import { DrawingCanvas, DrawingToolBar } from "./components";
 import useWebSocket from "./hooks/useWebSocket";
 import { ToolBaseInformation } from "./types/canvas.type";
 import { DrawingContext, DrawingContextProps } from "./context/DrawingContext";
-import { eraser } from "./assets";
 
 const App: React.FC = () => {
   const { socket } = useWebSocket("http://localhost:5005");

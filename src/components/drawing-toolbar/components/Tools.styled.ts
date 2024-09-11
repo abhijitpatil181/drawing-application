@@ -9,7 +9,7 @@ interface ToolBarButtonProps {
 
 export const ToolBarButton = styled(Button, {
   shouldForwardProp: (prop) => prop !== "active",
-})<ToolBarButtonProps>(({ theme, active }) => ({
+})<ToolBarButtonProps>(({ active }) => ({
   height: "95%",
   width: "2rem",
   minWidth: 0,

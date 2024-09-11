@@ -11,7 +11,7 @@ import {
 } from "./components";
 
 import useDrawingContext from "../../hooks/useDrawing";
-import EraserCursor from "./DrawingCanvas.styled";
+
 import Polygon from "./components/shapes/Polygon";
 import { isIntersecting, isTextToolProperty } from "../../utils/helper";
 
