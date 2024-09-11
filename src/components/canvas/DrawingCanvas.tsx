@@ -196,7 +196,6 @@ const DrawingCanvas: React.FC = () => {
             setCurrentTool(null);
             setDrawing(false);
           } else {
-            // Create a new polygon tool with the first point
             const newTool: ToolBaseInformation = {
               type: "text",
               geometry: [{ x, y }],
